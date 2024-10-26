@@ -116,7 +116,7 @@ ght_data_t ght_search(ght_table_t* table, ght_key_t key)
 {
     if (!table) return 0;
     
-    ght_load_t index = table->digestor(key) % table->width;
+    ght_index_t index = table->digestor(key) % table->width;
     ght_bucket_t* bucket = table->buckets[index];
     ght_bucket_t* prev = NULL;
     
@@ -149,7 +149,7 @@ ght_status_t ght_delete(ght_table_t* table, ght_key_t key, ght_deallocator_t dea
 {
     if (!table) return -1;
     
-    ght_load_t index = table->digestor(key) % table->width;
+    ght_index_t index = table->digestor(key) % table->width;
     ght_bucket_t* bucket = table->buckets[index];
     ght_bucket_t* prev = NULL;
     
