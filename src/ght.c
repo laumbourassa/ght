@@ -31,6 +31,7 @@ typedef struct ght_bucket ght_bucket_t;
 typedef struct ght_bucket
 {
     ght_key_t key;
+    ght_hash_t hash;
     ght_data_t data;
     ght_bucket_t* next;
 } ght_bucket_t;
@@ -49,6 +50,11 @@ static uint32_t _ght_murmur3_32(ght_key_t key, uint32_t seed);
 static uint64_t _ght_murmur3_64(ght_key_t key, uint64_t seed);
 static inline void _ght_delete_recursive(ght_bucket_t* bucket, ght_load_t* load, ght_deallocator_t deallocator);
 static inline void _ght_move_recursive(ght_bucket_t* bucket, ght_table_t* to_table);
+
+#define GHT_DIGESTOR_MURMUR3(key, seed) _Generic((key), \
+        uint64_t: _ght_murmur3_64,                      \
+        default: _ght_murmur3_32                        \
+        )(key, seed)
 
 ght_table_t* ght_create(ght_width_t width, ght_digestor_t digestor, ght_load_factor_t auto_resize)
 {
@@ -97,7 +103,8 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
     bucket->key = key;
     bucket->data = data;
     
-    ght_load_t index = table->digestor(key) % table->width;
+    bucket->hash = table->digestor(key);
+    ght_index_t index = bucket->hash % table->width;
     bucket->next = table->buckets[index];
     table->buckets[index] = bucket;
     table->load++; 
@@ -275,17 +282,7 @@ static uint64_t _ght_murmur3_64(ght_key_t key, uint64_t seed)
 static ght_hash_t _ght_digestor_murmur3(ght_key_t key)
 {
     uint32_t seed = 0x9747b28c;
-    
-    // Check if 64 bits
-    if (sizeof(key) == 8)
-    {
-        uint64_t hash = _ght_murmur3_64(key, seed);
-        return hash;
-    }
-    
-    // Else, assume 32 bits
-    uint32_t hash = _ght_murmur3_32(key, seed);
-    return hash;
+    return GHT_DIGESTOR_MURMUR3(key, seed);
 }
 
 static inline void _ght_delete_recursive(ght_bucket_t* bucket, ght_load_t* load, ght_deallocator_t deallocator)
@@ -314,8 +311,8 @@ static inline void _ght_move_recursive(ght_bucket_t* bucket, ght_table_t* to_tab
     {
         _ght_move_recursive(bucket->next, to_table);
     }
-    
-    ght_insert(to_table, bucket->key, bucket->data);
-    
-    free(bucket);
+
+    ght_index_t index = bucket->hash % to_table->width;
+    bucket->next = to_table->buckets[index];
+    to_table->buckets[index] = bucket;
 }

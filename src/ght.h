@@ -34,6 +34,7 @@ typedef struct ght_table ght_table_t;
 typedef uintptr_t ght_key_t;
 typedef uintptr_t ght_data_t;
 typedef int8_t ght_status_t;
+typedef size_t ght_index_t;
 typedef size_t ght_load_t;
 typedef size_t ght_width_t;
 typedef size_t ght_hash_t;
