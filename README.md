@@ -1,4 +1,3 @@
-```markdown
 # Generic Hash Table (GHT) Library
 
 ## Overview
@@ -108,4 +107,3 @@ The GHT library is released under the **MIT License**. You are free to use, modi
 ## Author
 
 This library was developed by **Laurent Mailloux-Bourassa**.
-```
