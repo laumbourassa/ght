@@ -29,6 +29,8 @@
 
 #include <stdint.h>
 
+#define	GHT_FORCE_INLINE inline __attribute__((always_inline))
+
 typedef struct ght_table ght_table_t;
 typedef uintptr_t ght_key_t;
 typedef uintptr_t ght_data_t;
@@ -41,6 +43,36 @@ typedef double ght_load_factor_t;
 
 typedef ght_hash_t (*ght_digestor_t)(ght_key_t key);                // User-provided hashing function
 typedef void (*ght_deallocator_t)(ght_key_t key, ght_data_t data);  // User-provided deallocator function for custom structures
+
+// Conversion functions for various types to ght_data_t
+static GHT_FORCE_INLINE ght_data_t _ght_int8_to_data(int8_t data) {return (ght_data_t) data;};
+static GHT_FORCE_INLINE ght_data_t _ght_int16_to_data(int16_t data) {return (ght_data_t) data;};
+static GHT_FORCE_INLINE ght_data_t _ght_int32_to_data(int32_t data) {return (ght_data_t) data;};
+static GHT_FORCE_INLINE ght_data_t _ght_int64_to_data(int64_t data) {return (ght_data_t) data;};
+static GHT_FORCE_INLINE ght_data_t _ght_uint8_to_data(uint8_t data) {return (ght_data_t) data;};
+static GHT_FORCE_INLINE ght_data_t _ght_uint16_to_data(uint16_t data) {return (ght_data_t) data;};
+static GHT_FORCE_INLINE ght_data_t _ght_uint32_to_data(uint32_t data) {return (ght_data_t) data;};
+static GHT_FORCE_INLINE ght_data_t _ght_uint64_to_data(uint64_t data) {return (ght_data_t) data;};
+static GHT_FORCE_INLINE ght_data_t _ght_float_to_data(float data) {return *(ght_data_t*) &data;};
+static GHT_FORCE_INLINE ght_data_t _ght_double_to_data(double data) {return *(ght_data_t*) &data;};
+//static GHT_FORCE_INLINE ght_data_t _ght_longdouble_to_data(long double data) {return *(ght_data_t*) &data;}; // Long double can be larger than ght_data_t
+static GHT_FORCE_INLINE ght_data_t _ght_voidptr_to_data(void* data) {return (ght_data_t) data;};
+
+#define GHT_DATA(data)  _Generic((data),                \
+        int8_t: _ght_int8_to_data,                      \
+        int16_t: _ght_int16_to_data,                    \
+        int32_t: _ght_int32_to_data,                    \
+        int64_t: _ght_int64_to_data,                    \
+        uint8_t: _ght_uint8_to_data,                      \
+        uint16_t: _ght_uint16_to_data,                    \
+        uint32_t: _ght_uint32_to_data,                    \
+        uint64_t: _ght_uint64_to_data,                    \
+        float: _ght_float_to_data,                      \
+        double: _ght_double_to_data,                    \
+        default: _ght_voidptr_to_data                   \
+        )(data)
+
+#define GHT_KEY(key) GHT_DATA(key)
 
 /**
  * @brief Creates a new hash table.
