@@ -126,23 +126,23 @@ ght_data_t ght_search(ght_table_t* table, ght_key_t key)
         bucket = bucket->next;
     }
     
-    if (bucket)
+    if (!bucket)
     {
-        if (prev)
-        {
-            prev->next = bucket->next;
-        }
-        
-        if (table->buckets[index] != bucket)
-        {
-            bucket->next = table->buckets[index];
-            table->buckets[index] = bucket;
-        }
-        
-        return bucket->data;
+        return 0;
+    }
+
+    if (prev)
+    {
+        prev->next = bucket->next;
     }
     
-    return 0;
+    if (table->buckets[index] != bucket)
+    {
+        bucket->next = table->buckets[index];
+        table->buckets[index] = bucket;
+    }
+    
+    return bucket->data;
 }
 
 ght_status_t ght_delete(ght_table_t* table, ght_key_t key, ght_deallocator_t deallocator)
@@ -159,30 +159,30 @@ ght_status_t ght_delete(ght_table_t* table, ght_key_t key, ght_deallocator_t dea
         bucket = bucket->next;
     }
     
-    if (bucket)
+    if (!bucket)
     {
-        if (prev)
-        {
-            prev->next = bucket->next;
-        }
-        
-        if (table->buckets[index] == bucket)
-        {
-            table->buckets[index] = bucket->next;
-        }
-        
-        if (deallocator)
-        {
-            deallocator(bucket->key, bucket->data);
-        }
-        
-        free(bucket);
-        table->load--;
-        
-        return 0;
+        return -1;
+    }
+
+    if (prev)
+    {
+        prev->next = bucket->next;
     }
     
-    return -1;
+    if (table->buckets[index] == bucket)
+    {
+        table->buckets[index] = bucket->next;
+    }
+    
+    if (deallocator)
+    {
+        deallocator(bucket->key, bucket->data);
+    }
+    
+    free(bucket);
+    table->load--;
+    
+    return 0;
 }
 
 ght_load_t ght_load(ght_table_t* table)
@@ -223,6 +223,12 @@ ght_status_t ght_resize(ght_table_t* table, ght_width_t width)
     free(new);
     
     return 0;
+}
+
+static ght_hash_t _ght_digestor_murmur3(ght_key_t key)
+{
+    uint32_t seed = 0x9747b28c;
+    return GHT_DIGESTOR_MURMUR3(key, seed);
 }
 
 static GHT_FORCE_INLINE uint32_t _ght_murmur3_32(ght_key_t key, uint32_t seed)
@@ -277,12 +283,6 @@ static GHT_FORCE_INLINE uint64_t _ght_murmur3_64(ght_key_t key, uint64_t seed)
     hash ^= (hash >> 33);
 
     return hash;
-}
-
-static ght_hash_t _ght_digestor_murmur3(ght_key_t key)
-{
-    uint32_t seed = 0x9747b28c;
-    return GHT_DIGESTOR_MURMUR3(key, seed);
 }
 
 static void _ght_delete_recursive(ght_bucket_t* bucket, ght_load_t* load, ght_deallocator_t deallocator)
