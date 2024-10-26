@@ -46,8 +46,8 @@ typedef struct ght_table
 } ght_table_t;
 
 static ght_hash_t _ght_digestor_murmur3(ght_key_t key);
-static uint32_t _ght_murmur3_32(ght_key_t key, uint32_t seed);
-static uint64_t _ght_murmur3_64(ght_key_t key, uint64_t seed);
+static GHT_FORCE_INLINE uint32_t _ght_murmur3_32(ght_key_t key, uint32_t seed);
+static GHT_FORCE_INLINE uint64_t _ght_murmur3_64(ght_key_t key, uint64_t seed);
 static inline void _ght_delete_recursive(ght_bucket_t* bucket, ght_load_t* load, ght_deallocator_t deallocator);
 static inline void _ght_move_recursive(ght_bucket_t* bucket, ght_table_t* to_table);
 
