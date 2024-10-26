@@ -28,7 +28,6 @@
 #define GHT_H
 
 #include <stdint.h>
-#include <stdlib.h>
 
 typedef struct ght_table ght_table_t;
 typedef uintptr_t ght_key_t;
