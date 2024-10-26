@@ -225,7 +225,7 @@ ght_status_t ght_resize(ght_table_t* table, ght_width_t width)
     return 0;
 }
 
-static uint32_t _ght_murmur3_32(ght_key_t key, uint32_t seed)
+static GHT_FORCE_INLINE uint32_t _ght_murmur3_32(ght_key_t key, uint32_t seed)
 {
     uint32_t hash = seed;
     const uint32_t c1 = 0xcc9e2d51;
@@ -252,7 +252,7 @@ static uint32_t _ght_murmur3_32(ght_key_t key, uint32_t seed)
     return hash;
 }
 
-static uint64_t _ght_murmur3_64(ght_key_t key, uint64_t seed)
+static GHT_FORCE_INLINE uint64_t _ght_murmur3_64(ght_key_t key, uint64_t seed)
 {
     uint64_t hash = seed;
     const uint64_t c1 = 0x87c37b91114253d5ULL;
