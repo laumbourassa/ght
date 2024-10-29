@@ -45,18 +45,18 @@ typedef ght_hash_t (*ght_digestor_t)(ght_key_t key);                // User-prov
 typedef void (*ght_deallocator_t)(ght_key_t key, ght_data_t data);  // User-provided deallocator function for custom structures
 
 // Conversion functions for various types to ght_data_t
-static GHT_FORCE_INLINE ght_data_t _ght_int8_to_data(int8_t data) {return (ght_data_t) data;};
-static GHT_FORCE_INLINE ght_data_t _ght_int16_to_data(int16_t data) {return (ght_data_t) data;};
-static GHT_FORCE_INLINE ght_data_t _ght_int32_to_data(int32_t data) {return (ght_data_t) data;};
-static GHT_FORCE_INLINE ght_data_t _ght_int64_to_data(int64_t data) {return (ght_data_t) data;};
-static GHT_FORCE_INLINE ght_data_t _ght_uint8_to_data(uint8_t data) {return (ght_data_t) data;};
-static GHT_FORCE_INLINE ght_data_t _ght_uint16_to_data(uint16_t data) {return (ght_data_t) data;};
-static GHT_FORCE_INLINE ght_data_t _ght_uint32_to_data(uint32_t data) {return (ght_data_t) data;};
-static GHT_FORCE_INLINE ght_data_t _ght_uint64_to_data(uint64_t data) {return (ght_data_t) data;};
-static GHT_FORCE_INLINE ght_data_t _ght_float_to_data(float data) {return *(ght_data_t*) &data;};
-static GHT_FORCE_INLINE ght_data_t _ght_double_to_data(double data) {return *(ght_data_t*) &data;};
-//static GHT_FORCE_INLINE ght_data_t _ght_longdouble_to_data(long double data) {return *(ght_data_t*) &data;}; // Long double can be larger than ght_data_t
-static GHT_FORCE_INLINE ght_data_t _ght_voidptr_to_data(void* data) {return (ght_data_t) data;};
+static GHT_FORCE_INLINE ght_data_t _ght_int8_to_data(int8_t data) {return (ght_data_t) data;}
+static GHT_FORCE_INLINE ght_data_t _ght_int16_to_data(int16_t data) {return (ght_data_t) data;}
+static GHT_FORCE_INLINE ght_data_t _ght_int32_to_data(int32_t data) {return (ght_data_t) data;}
+static GHT_FORCE_INLINE ght_data_t _ght_int64_to_data(int64_t data) {return (ght_data_t) data;}
+static GHT_FORCE_INLINE ght_data_t _ght_uint8_to_data(uint8_t data) {return (ght_data_t) data;}
+static GHT_FORCE_INLINE ght_data_t _ght_uint16_to_data(uint16_t data) {return (ght_data_t) data;}
+static GHT_FORCE_INLINE ght_data_t _ght_uint32_to_data(uint32_t data) {return (ght_data_t) data;}
+static GHT_FORCE_INLINE ght_data_t _ght_uint64_to_data(uint64_t data) {return (ght_data_t) data;}
+static GHT_FORCE_INLINE ght_data_t _ght_float_to_data(float data) {return *(ght_data_t*) &data;}
+static GHT_FORCE_INLINE ght_data_t _ght_double_to_data(double data) {return *(ght_data_t*) &data;}
+//static GHT_FORCE_INLINE ght_data_t _ght_longdouble_to_data(long double data) {return *(ght_data_t*) &data;} // Long double can be larger than ght_data_t
+static GHT_FORCE_INLINE ght_data_t _ght_voidptr_to_data(void* data) {return (ght_data_t) data;}
 
 #define GHT_DATA(data)  _Generic((data),                \
         int8_t: _ght_int8_to_data,                      \
