@@ -82,9 +82,11 @@ ght_status_t ght_destroy(ght_table_t* table, ght_deallocator_t deallocator)
     for (ght_load_t i = 0; table->load && (i < table->width); i++)
     {
         _ght_delete_recursive(table->buckets[i], &table->load, deallocator);
+        table->buckets[i] = NULL;
     }
     
     free(table->buckets);
+    table->buckets = NULL;
     free(table);
     
     return 0;
@@ -293,6 +295,7 @@ static void _ght_delete_recursive(ght_bucket_t* bucket, ght_load_t* load, ght_de
     if (bucket->next)
     {
         _ght_delete_recursive(bucket->next, load, deallocator);
+        bucket->next = NULL;
     }
     
     if (deallocator)
