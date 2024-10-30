@@ -38,8 +38,8 @@ gcc -o your_program your_program.c ght.c
 
 int main()
 {
-  // Create a hash table with initial width of 10, using default hash function, and auto-resize at 0.75 load factor
-  ght_table_t* table = ght_create(10, NULL, 0.75);
+  // Create a hash table
+  ght_table_t* table = ght_create(NULL);
 
   // Insert key-value pairs
   ght_insert(table, GHT_KEY(1), GHT_DATA(100));
@@ -53,10 +53,10 @@ int main()
   printf("Table width: %zu\n", ght_width(table));
 
   // Delete a key-value pair
-  ght_delete(table, GHT_KEY(1), NULL);
+  ght_delete(table, GHT_KEY(1));
 
   // Destroy the table when done
-  ght_destroy(table, NULL);
+  ght_destroy(table);
 
   return 0;
 }
