@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include "ght.h"
 
+#define GLL_DEFAULT_WIDTH   (100)
+
 typedef struct ght_bucket ght_bucket_t;
 typedef struct ght_bucket
 {
@@ -38,11 +40,12 @@ typedef struct ght_bucket
 
 typedef struct ght_table
 {
-    ght_bucket_t** buckets;
-    ght_width_t width;
-    ght_load_t load;
-    ght_load_factor_t auto_resize;
     ght_digestor_t digestor;
+    ght_deallocator_t deallocator;
+    ght_width_t width;
+    ght_load_factor_t auto_resize;
+    ght_bucket_t** buckets;
+    ght_load_t load;
 } ght_table_t;
 
 static ght_hash_t _ght_digestor_murmur3(ght_key_t key);
@@ -56,32 +59,49 @@ static void _ght_move_recursive(ght_bucket_t* bucket, ght_load_t* moved, ght_tab
         default: _ght_digestor_murmur3_32               \
         )(key, seed)
 
-ght_table_t* ght_create(ght_width_t width, ght_digestor_t digestor, ght_load_factor_t auto_resize)
+ght_table_t* ght_create(ght_cfg_t* cfg)
 {
-    if (!width) return NULL;
-    
-    ght_table_t* table = calloc(1, sizeof(ght_table_t));
-    table->buckets = calloc(width, sizeof(ght_bucket_t*));
-    table->width = width;
-    table->auto_resize = auto_resize > 0.0 ? auto_resize : 0.0;
-    
-    if (!digestor)
+    ght_digestor_t digestor;
+    ght_deallocator_t deallocator;
+    ght_width_t width;
+    ght_load_factor_t auto_resize;
+
+    if (cfg)
+    {
+        digestor = cfg->digestor ? cfg->digestor : _ght_digestor_murmur3;
+        deallocator = cfg->deallocator;
+        width = cfg->width ? cfg->width : GLL_DEFAULT_WIDTH;
+        auto_resize = cfg->auto_resize;
+    }
+    else
     {
         digestor = _ght_digestor_murmur3;
+        deallocator = NULL;
+        width = GLL_DEFAULT_WIDTH;
+        auto_resize = 0.0;
     }
     
-    table->digestor = digestor;
+    ght_table_t* table = calloc(1, sizeof(ght_table_t));
+
+    if (table)
+    {
+        table->buckets = calloc(width, sizeof(ght_bucket_t*));
+        table->digestor = digestor;
+        table->deallocator = deallocator;
+        table->width = width;
+        table->auto_resize = auto_resize;
+    }
     
     return table;
 }
 
-ght_status_t ght_destroy(ght_table_t* table, ght_deallocator_t deallocator)
+ght_status_t ght_destroy(ght_table_t* table)
 {
     if (!table) return -1;
     
     for (ght_load_t i = 0; table->load && (i < table->width); i++)
     {
-        _ght_delete_recursive(table->buckets[i], &table->load, deallocator);
+        _ght_delete_recursive(table->buckets[i], &table->load, table->deallocator);
         table->buckets[i] = NULL;
     }
     
@@ -147,7 +167,7 @@ ght_data_t ght_search(ght_table_t* table, ght_key_t key)
     return bucket->data;
 }
 
-ght_status_t ght_delete(ght_table_t* table, ght_key_t key, ght_deallocator_t deallocator)
+ght_status_t ght_delete(ght_table_t* table, ght_key_t key)
 {
     if (!table) return -1;
     
@@ -176,9 +196,9 @@ ght_status_t ght_delete(ght_table_t* table, ght_key_t key, ght_deallocator_t dea
         table->buckets[index] = bucket->next;
     }
     
-    if (deallocator)
+    if (table->deallocator)
     {
-        deallocator(bucket->key, bucket->data);
+        table->deallocator(bucket->key, bucket->data);
     }
     
     free(bucket);
@@ -212,7 +232,14 @@ ght_status_t ght_resize(ght_table_t* table, ght_width_t width)
 {
     if (!table || !width) return -1;
     
-    ght_table_t* new = ght_create(width, table->digestor, 0);
+    ght_cfg_t cfg = {
+                        .digestor = table->digestor,
+                        .deallocator = table->deallocator,
+                        .width = width,
+                        .auto_resize = 0.0
+                    };
+
+    ght_table_t* new = ght_create(&cfg);
     
     ght_load_t moved = 0;
     for (ght_load_t i = 0; moved < table->load && i < table->width; i++)

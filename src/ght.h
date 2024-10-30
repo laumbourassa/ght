@@ -44,6 +44,14 @@ typedef double ght_load_factor_t;       // Type representing the load of table d
 typedef ght_hash_t (*ght_digestor_t)(ght_key_t key);                // User-provided hashing function
 typedef void (*ght_deallocator_t)(ght_key_t key, ght_data_t data);  // User-provided deallocator function for custom structures
 
+typedef struct ght_cfg
+{
+    ght_digestor_t digestor;
+    ght_deallocator_t deallocator;
+    ght_width_t width;
+    ght_load_factor_t auto_resize;
+} ght_cfg_t;
+
 // Conversion functions for various types to ght_data_t
 static GHT_FORCE_INLINE ght_data_t _ght_int8_to_data(int8_t data) {return (ght_data_t) data;}
 static GHT_FORCE_INLINE ght_data_t _ght_int16_to_data(int16_t data) {return (ght_data_t) data;}
@@ -77,21 +85,18 @@ static GHT_FORCE_INLINE ght_data_t _ght_voidptr_to_data(void* data) {return (ght
 /**
  * @brief Creates a new hash table.
  * 
- * @param width The width of the table.
- * @param digestor Function to hash keys. If NULL, Murmur3 will be used by default.
- * @param auto_resize A value between 0 and 1 indicating the load factor at which the table should automatically double in width. 0 to never resize.
+ * @param cfg The table configuration.
  * @return Pointer to the created ght_table_t or NULL on failure.
  */
-ght_table_t* ght_create(ght_width_t width, ght_digestor_t digestor, ght_load_factor_t auto_resize);
+ght_table_t* ght_create(ght_cfg_t* cfg);
 
 /**
  * @brief Destroys the entire table and frees all allocated memory.
  * 
  * @param table The table to destroy.
- * @param deallocator Function to deallocate any custom data, or NULL.
  * @return 0 on success, -1 on failure.
  */
-ght_status_t ght_destroy(ght_table_t* table, ght_deallocator_t deallocator);
+ght_status_t ght_destroy(ght_table_t* table);
 
 /**
  * @brief Inserts data in the table and associates it to a key.
@@ -117,10 +122,9 @@ ght_data_t ght_search(ght_table_t* table, ght_key_t key);
  * 
  * @param table The table to delete the data from.
  * @param key The key associated to the data.
- * @param deallocator Function to deallocate any custom data, or NULL.
  * @return 0 on success, -1 on failure.
  */
-ght_status_t ght_delete(ght_table_t* table, ght_key_t key, ght_deallocator_t deallocator);
+ght_status_t ght_delete(ght_table_t* table, ght_key_t key);
 
 /**
  * @brief Returns the number of elements in the table.

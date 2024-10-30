@@ -65,11 +65,11 @@ int main()
 ### API Documentation
 
 #### Table Management
-- `ght_table_t* ght_create(ght_width_t width, ght_digestor_t digestor, ght_load_factor_t auto_resize);`  
-  Creates a new hash table with specified width, hashing function, and auto-resize load factor.
+- `ght_table_t* ght_create(ght_cfg_t* cfg);`  
+  Creates and returns a new hash table.
 
-- `ght_status_t ght_destroy(ght_table_t* table, ght_deallocator_t deallocator);`  
-  Destroys the table and frees all allocated memory. A custom deallocator may be specified for custom data types.
+- `ght_status_t ght_destroy(ght_table_t* table);`  
+  Destroys the table and frees all allocated memory using a custom deallocator if provided.
 
 - `ght_load_t ght_load(ght_table_t* table);`  
   Returns the number of elements in the table.
@@ -90,8 +90,8 @@ int main()
 - `ght_data_t ght_search(ght_table_t* table, ght_key_t key);`  
   Searches and returns the value associated with the given key, or 0 if not found.
 
-- `ght_status_t ght_delete(ght_table_t* table, ght_key_t key, ght_deallocator_t deallocator);`  
-  Deletes the key-value pair from the table. A custom deallocator may be provided to free complex data structures.
+- `ght_status_t ght_delete(ght_table_t* table, ght_key_t key);`  
+  Deletes the key-value pair from the table.
 
 #### Conversion Macros
 - `GHT_DATA(data)`  
