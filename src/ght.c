@@ -53,7 +53,6 @@ static GHT_FORCE_INLINE uint32_t _ght_digestor_murmur3_32(ght_key_t key, uint32_
 static GHT_FORCE_INLINE uint64_t _ght_digestor_murmur3_64(ght_key_t key, uint64_t seed);
 static void _ght_delete_recursive(ght_bucket_t* bucket, ght_load_t* load, ght_deallocator_t deallocator);
 static void _ght_move_recursive(ght_bucket_t* bucket, ght_load_t* moved, ght_table_t* to_table);
-static ght_bucket_t* _ght_find_bucket(ght_table_t* table, ght_key_t key);
 
 #define GHT_DIGESTOR_MURMUR3(key, seed) _Generic((key), \
         uint64_t: _ght_digestor_murmur3_64,             \
@@ -117,7 +116,15 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
 {
     if (!table) return -1;
 
-    ght_bucket_t* bucket = _ght_find_bucket(table, key);
+    ght_index_t index = table->digestor(key) % table->width;
+    ght_bucket_t* bucket = table->buckets[index];
+    ght_bucket_t* prev = NULL;
+    
+    while (bucket && (key != bucket->key))
+    {
+        prev = bucket;
+        bucket = bucket->next;
+    }
 
     if (bucket)
     {
@@ -129,6 +136,11 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
         bucket->data = data;
 
         ght_index_t index = bucket->hash % table->width;
+        
+        if (prev)
+        {
+            prev->next = bucket->next;
+        }
 
         if (table->buckets[index] != bucket)
         {
@@ -149,7 +161,7 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
     bucket->data = data;
     
     bucket->hash = table->digestor(key);
-    ght_index_t index = bucket->hash % table->width;
+    index = bucket->hash % table->width;
     bucket->next = table->buckets[index];
     table->buckets[index] = bucket;
     table->load++; 
@@ -370,17 +382,4 @@ static void _ght_move_recursive(ght_bucket_t* bucket, ght_load_t* moved, ght_tab
     bucket->next = to_table->buckets[index];
     to_table->buckets[index] = bucket;
     (*moved)++;
-}
-
-static ght_bucket_t* _ght_find_bucket(ght_table_t* table, ght_key_t key)
-{
-    ght_index_t index = table->digestor(key) % table->width;
-    ght_bucket_t* bucket = table->buckets[index];
-    
-    while (bucket && (key != bucket->key))
-    {
-        bucket = bucket->next;
-    }
-
-    return bucket;
 }
