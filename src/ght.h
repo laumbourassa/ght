@@ -82,6 +82,9 @@ static GHT_FORCE_INLINE ght_data_t _ght_voidptr_to_data(void* data) {return (ght
 
 #define GHT_KEY(key) GHT_DATA(key)
 
+#define GHT_FLOAT(data)         (*(float*) &data)
+#define GHT_DOUBLE(data)        (*(double*) &data)
+
 /**
  * @brief Creates a new hash table.
  * 
