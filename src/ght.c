@@ -134,8 +134,6 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
         }
 
         bucket->data = data;
-
-        ght_index_t index = bucket->hash % table->width;
         
         if (prev)
         {
