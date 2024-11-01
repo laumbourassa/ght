@@ -138,10 +138,6 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
         if (prev)
         {
             prev->next = bucket->next;
-        }
-
-        if (table->buckets[index] != bucket)
-        {
             bucket->next = table->buckets[index];
             table->buckets[index] = bucket;
         }
@@ -189,10 +185,6 @@ ght_data_t ght_search(ght_table_t* table, ght_key_t key)
     if (prev)
     {
         prev->next = bucket->next;
-    }
-    
-    if (table->buckets[index] != bucket)
-    {
         bucket->next = table->buckets[index];
         table->buckets[index] = bucket;
     }
@@ -223,8 +215,7 @@ ght_status_t ght_delete(ght_table_t* table, ght_key_t key)
     {
         prev->next = bucket->next;
     }
-    
-    if (table->buckets[index] == bucket)
+    else
     {
         table->buckets[index] = bucket->next;
     }
