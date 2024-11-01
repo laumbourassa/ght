@@ -144,13 +144,19 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
         
         return 0;
     }
+
+    bucket = calloc(1, sizeof(ght_bucket_t));
+
+    if (!bucket)
+    {
+        return -1;
+    }
     
     if (table->auto_resize > 0.0 && (ght_load_factor_t) (table->load + 1)/(ght_load_factor_t) table->width > table->auto_resize)
     {
         ght_resize(table, table->width * 2);
     }
     
-    bucket = calloc(1, sizeof(ght_bucket_t));
     bucket->key = key;
     bucket->data = data;
     
