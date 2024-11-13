@@ -25,6 +25,7 @@
  */
 
 #include <stdlib.h>
+#include <threads.h>
 #include "ght.h"
 
 #define GLL_DEFAULT_WIDTH   (100)
@@ -40,6 +41,7 @@ typedef struct ght_bucket
 
 typedef struct ght_table
 {
+    mtx_t mutex;
     ght_digestor_t digestor;
     ght_deallocator_t deallocator;
     ght_width_t width;
@@ -85,6 +87,12 @@ ght_table_t* ght_create(ght_cfg_t* cfg)
 
     if (table)
     {
+        if (thrd_success != mtx_init(&table->mutex, mtx_plain | mtx_recursive))
+        {
+            free(table);
+            return NULL;
+        }
+
         table->buckets = calloc(width, sizeof(ght_bucket_t*));
         table->digestor = digestor;
         table->deallocator = deallocator;
@@ -107,6 +115,8 @@ ght_status_t ght_destroy(ght_table_t* table)
     
     free(table->buckets);
     table->buckets = NULL;
+
+    mtx_destroy(&table->mutex);
     free(table);
     
     return 0;
@@ -115,6 +125,7 @@ ght_status_t ght_destroy(ght_table_t* table)
 ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
 {
     if (!table) return -1;
+    mtx_lock(&table->mutex);
 
     ght_index_t index = table->digestor(key) % table->width;
     ght_bucket_t* bucket = table->buckets[index];
@@ -166,12 +177,14 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
     table->buckets[index] = bucket;
     table->load++; 
     
+    mtx_unlock(&table->mutex);
     return 0;
 }
 
 ght_data_t ght_search(ght_table_t* table, ght_key_t key)
 {
     if (!table) return 0;
+    mtx_lock(&table->mutex);
     
     ght_index_t index = table->digestor(key) % table->width;
     ght_bucket_t* bucket = table->buckets[index];
@@ -195,12 +208,16 @@ ght_data_t ght_search(ght_table_t* table, ght_key_t key)
         table->buckets[index] = bucket;
     }
     
-    return bucket->data;
+    ght_data_t data = bucket->data;
+
+    mtx_unlock(&table->mutex);
+    return data;
 }
 
 ght_status_t ght_delete(ght_table_t* table, ght_key_t key)
 {
     if (!table) return -1;
+    mtx_lock(&table->mutex);
     
     ght_index_t index = table->digestor(key) % table->width;
     ght_bucket_t* bucket = table->buckets[index];
@@ -234,33 +251,53 @@ ght_status_t ght_delete(ght_table_t* table, ght_key_t key)
     free(bucket);
     table->load--;
     
+    mtx_unlock(&table->mutex);
     return 0;
 }
 
 ght_load_t ght_load(ght_table_t* table)
 {
     if (!table) return 0;
+    mtx_lock(&table->mutex);
 
-    return table->load;
+    ght_load_t load = table->load;
+
+    mtx_unlock(&table->mutex);
+    return load;
 }
 
 ght_width_t ght_width(ght_table_t* table)
 {
     if (!table) return 0;
+    mtx_lock(&table->mutex);
 
-    return table->width;
+    ght_width_t width = table->width;
+
+    mtx_unlock(&table->mutex);
+    return width;
 }
 
 ght_load_factor_t ght_load_factor(ght_table_t* table)
 {
-     if (!table || table->width == 0) return 0.0;
-     
-     return (ght_load_factor_t) table->load / (ght_load_factor_t) table->width;
+    if (!table) return 0.0;
+    mtx_lock(&table->mutex);
+
+    if (table->width == 0)
+    {
+        mtx_unlock(&table->mutex);
+        return 0.0;
+    }
+
+    ght_load_factor_t load_factor = (ght_load_factor_t) table->load / (ght_load_factor_t) table->width;
+    
+    mtx_unlock(&table->mutex);
+    return load_factor;
 }
 
 ght_status_t ght_resize(ght_table_t* table, ght_width_t width)
 {
     if (!table || !width) return -1;
+    mtx_lock(&table->mutex);
     
     ght_cfg_t cfg = {
                         .digestor = table->digestor,
@@ -280,8 +317,10 @@ ght_status_t ght_resize(ght_table_t* table, ght_width_t width)
     free(table->buckets);
     table->buckets = new->buckets;
     table->width = new->width;
+    mtx_destroy(&new->mutex);
     free(new);
     
+    mtx_unlock(&table->mutex);
     return 0;
 }
 
