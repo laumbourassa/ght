@@ -153,6 +153,7 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
             table->buckets[index] = bucket;
         }
         
+        mtx_unlock(&table->mutex);
         return 0;
     }
 
@@ -160,6 +161,7 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
 
     if (!bucket)
     {
+        mtx_unlock(&table->mutex);
         return -1;
     }
     
@@ -198,6 +200,7 @@ ght_data_t ght_search(ght_table_t* table, ght_key_t key)
     
     if (!bucket)
     {
+        mtx_unlock(&table->mutex);
         return 0;
     }
 
@@ -231,6 +234,7 @@ ght_status_t ght_delete(ght_table_t* table, ght_key_t key)
     
     if (!bucket)
     {
+        mtx_unlock(&table->mutex);
         return -1;
     }
 
