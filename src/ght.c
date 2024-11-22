@@ -30,8 +30,10 @@
 
 #define GHT_DEFAULT_WIDTH   (100)
 
-#define GHT_MUTEX_LOCK(ght)     mtx_lock(&ght->mutex)
-#define GHT_MUTEX_UNLOCK(ght)   mtx_unlock(&ght->mutex)
+#define GHT_MUTEX_CREATE_RECURSIVE(ght) (thrd_success == mtx_init(&ght->mutex, mtx_plain | mtx_recursive))
+#define GHT_MUTEX_DESTROY(ght)          (mtx_destroy(&ght->mutex))
+#define GHT_MUTEX_LOCK(ght)             (mtx_lock(&ght->mutex))
+#define GHT_MUTEX_UNLOCK(ght)           (mtx_unlock(&ght->mutex))
 
 typedef struct ght_bucket ght_bucket_t;
 typedef struct ght_bucket
@@ -90,7 +92,7 @@ ght_table_t* ght_create(ght_cfg_t* cfg)
 
     if (table)
     {
-        if (thrd_success != mtx_init(&table->mutex, mtx_plain | mtx_recursive))
+        if (!GHT_MUTEX_CREATE_RECURSIVE(table))
         {
             free(table);
             return NULL;
@@ -119,7 +121,7 @@ ght_status_t ght_destroy(ght_table_t* table)
     free(table->buckets);
     table->buckets = NULL;
 
-    mtx_destroy(&table->mutex);
+    GHT_MUTEX_DESTROY(table);
     free(table);
     
     return 0;
@@ -324,7 +326,7 @@ ght_status_t ght_resize(ght_table_t* table, ght_width_t width)
     free(table->buckets);
     table->buckets = new->buckets;
     table->width = new->width;
-    mtx_destroy(&new->mutex);
+    GHT_MUTEX_DESTROY(new);
     free(new);
     
     GHT_MUTEX_UNLOCK(table);
