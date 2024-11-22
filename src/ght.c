@@ -28,7 +28,10 @@
 #include <threads.h>
 #include "ght.h"
 
-#define GLL_DEFAULT_WIDTH   (100)
+#define GHT_DEFAULT_WIDTH   (100)
+
+#define GHT_MUTEX_LOCK(ght)     mtx_lock(&ght->mutex)
+#define GHT_MUTEX_UNLOCK(ght)   mtx_unlock(&ght->mutex)
 
 typedef struct ght_bucket ght_bucket_t;
 typedef struct ght_bucket
@@ -72,14 +75,14 @@ ght_table_t* ght_create(ght_cfg_t* cfg)
     {
         digestor = cfg->digestor ? cfg->digestor : _ght_digestor_murmur3;
         deallocator = cfg->deallocator;
-        width = cfg->width ? cfg->width : GLL_DEFAULT_WIDTH;
+        width = cfg->width ? cfg->width : GHT_DEFAULT_WIDTH;
         auto_resize = cfg->auto_resize;
     }
     else
     {
         digestor = _ght_digestor_murmur3;
         deallocator = NULL;
-        width = GLL_DEFAULT_WIDTH;
+        width = GHT_DEFAULT_WIDTH;
         auto_resize = 0.0;
     }
     
@@ -125,7 +128,7 @@ ght_status_t ght_destroy(ght_table_t* table)
 ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
 {
     if (!table) return -1;
-    mtx_lock(&table->mutex);
+    GHT_MUTEX_LOCK(table);
 
     ght_index_t index = table->digestor(key) % table->width;
     ght_bucket_t* bucket = table->buckets[index];
@@ -153,7 +156,7 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
             table->buckets[index] = bucket;
         }
         
-        mtx_unlock(&table->mutex);
+        GHT_MUTEX_UNLOCK(table);
         return 0;
     }
 
@@ -161,7 +164,7 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
 
     if (!bucket)
     {
-        mtx_unlock(&table->mutex);
+        GHT_MUTEX_UNLOCK(table);
         return -1;
     }
     
@@ -179,14 +182,14 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
     table->buckets[index] = bucket;
     table->load++; 
     
-    mtx_unlock(&table->mutex);
+    GHT_MUTEX_UNLOCK(table);
     return 0;
 }
 
 ght_data_t ght_search(ght_table_t* table, ght_key_t key)
 {
     if (!table) return 0;
-    mtx_lock(&table->mutex);
+    GHT_MUTEX_LOCK(table);
     
     ght_index_t index = table->digestor(key) % table->width;
     ght_bucket_t* bucket = table->buckets[index];
@@ -200,7 +203,7 @@ ght_data_t ght_search(ght_table_t* table, ght_key_t key)
     
     if (!bucket)
     {
-        mtx_unlock(&table->mutex);
+        GHT_MUTEX_UNLOCK(table);
         return 0;
     }
 
@@ -213,14 +216,14 @@ ght_data_t ght_search(ght_table_t* table, ght_key_t key)
     
     ght_data_t data = bucket->data;
 
-    mtx_unlock(&table->mutex);
+    GHT_MUTEX_UNLOCK(table);
     return data;
 }
 
 ght_status_t ght_delete(ght_table_t* table, ght_key_t key)
 {
     if (!table) return -1;
-    mtx_lock(&table->mutex);
+    GHT_MUTEX_LOCK(table);
     
     ght_index_t index = table->digestor(key) % table->width;
     ght_bucket_t* bucket = table->buckets[index];
@@ -234,7 +237,7 @@ ght_status_t ght_delete(ght_table_t* table, ght_key_t key)
     
     if (!bucket)
     {
-        mtx_unlock(&table->mutex);
+        GHT_MUTEX_UNLOCK(table);
         return -1;
     }
 
@@ -255,53 +258,53 @@ ght_status_t ght_delete(ght_table_t* table, ght_key_t key)
     free(bucket);
     table->load--;
     
-    mtx_unlock(&table->mutex);
+    GHT_MUTEX_UNLOCK(table);
     return 0;
 }
 
 ght_load_t ght_load(ght_table_t* table)
 {
     if (!table) return 0;
-    mtx_lock(&table->mutex);
+    GHT_MUTEX_LOCK(table);
 
     ght_load_t load = table->load;
 
-    mtx_unlock(&table->mutex);
+    GHT_MUTEX_UNLOCK(table);
     return load;
 }
 
 ght_width_t ght_width(ght_table_t* table)
 {
     if (!table) return 0;
-    mtx_lock(&table->mutex);
+    GHT_MUTEX_LOCK(table);
 
     ght_width_t width = table->width;
 
-    mtx_unlock(&table->mutex);
+    GHT_MUTEX_UNLOCK(table);
     return width;
 }
 
 ght_load_factor_t ght_load_factor(ght_table_t* table)
 {
     if (!table) return 0.0;
-    mtx_lock(&table->mutex);
+    GHT_MUTEX_LOCK(table);
 
     if (table->width == 0)
     {
-        mtx_unlock(&table->mutex);
+        GHT_MUTEX_UNLOCK(table);
         return 0.0;
     }
 
     ght_load_factor_t load_factor = (ght_load_factor_t) table->load / (ght_load_factor_t) table->width;
     
-    mtx_unlock(&table->mutex);
+    GHT_MUTEX_UNLOCK(table);
     return load_factor;
 }
 
 ght_status_t ght_resize(ght_table_t* table, ght_width_t width)
 {
     if (!table || !width) return -1;
-    mtx_lock(&table->mutex);
+    GHT_MUTEX_LOCK(table);
     
     ght_cfg_t cfg = {
                         .digestor = table->digestor,
@@ -324,7 +327,7 @@ ght_status_t ght_resize(ght_table_t* table, ght_width_t width)
     mtx_destroy(&new->mutex);
     free(new);
     
-    mtx_unlock(&table->mutex);
+    GHT_MUTEX_UNLOCK(table);
     return 0;
 }
 
