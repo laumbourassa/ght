@@ -49,6 +49,7 @@ typedef struct ght_table
     mtx_t mutex;
     ght_digestor_t digestor;
     ght_deallocator_t deallocator;
+    ght_comparator_t comparator;
     ght_width_t width;
     ght_load_factor_t auto_resize;
     ght_bucket_t** buckets;
@@ -58,6 +59,7 @@ typedef struct ght_table
 static ght_hash_t _ght_digestor_murmur3(ght_key_t key);
 static GHT_FORCE_INLINE uint32_t _ght_digestor_murmur3_32(ght_key_t key, uint32_t seed);
 static GHT_FORCE_INLINE uint64_t _ght_digestor_murmur3_64(ght_key_t key, uint64_t seed);
+static ght_result_t _ght_comparator_default(ght_key_t key1, ght_key_t key2);
 static void _ght_delete_recursive(ght_bucket_t* bucket, ght_load_t* load, ght_deallocator_t deallocator);
 static void _ght_move_recursive(ght_bucket_t* bucket, ght_load_t* moved, ght_table_t* to_table);
 
@@ -70,6 +72,7 @@ ght_table_t* ght_create(ght_cfg_t* cfg)
 {
     ght_digestor_t digestor;
     ght_deallocator_t deallocator;
+    ght_comparator_t comparator;
     ght_width_t width;
     ght_load_factor_t auto_resize;
 
@@ -77,6 +80,7 @@ ght_table_t* ght_create(ght_cfg_t* cfg)
     {
         digestor = cfg->digestor ? cfg->digestor : _ght_digestor_murmur3;
         deallocator = cfg->deallocator;
+        comparator = cfg->comparator ? cfg->comparator : _ght_comparator_default;
         width = cfg->width ? cfg->width : GHT_DEFAULT_WIDTH;
         auto_resize = cfg->auto_resize;
     }
@@ -84,6 +88,7 @@ ght_table_t* ght_create(ght_cfg_t* cfg)
     {
         digestor = _ght_digestor_murmur3;
         deallocator = NULL;
+        comparator = _ght_comparator_default;
         width = GHT_DEFAULT_WIDTH;
         auto_resize = 0.0;
     }
@@ -101,6 +106,7 @@ ght_table_t* ght_create(ght_cfg_t* cfg)
         table->buckets = calloc(width, sizeof(ght_bucket_t*));
         table->digestor = digestor;
         table->deallocator = deallocator;
+        table->comparator = comparator;
         table->width = width;
         table->auto_resize = auto_resize;
     }
@@ -136,7 +142,7 @@ ght_status_t ght_insert(ght_table_t* table, ght_key_t key, ght_data_t data)
     ght_bucket_t* bucket = table->buckets[index];
     ght_bucket_t* prev = NULL;
     
-    while (bucket && (key != bucket->key))
+    while (bucket && table->comparator(key, bucket->key))
     {
         prev = bucket;
         bucket = bucket->next;
@@ -197,7 +203,7 @@ ght_data_t ght_search(ght_table_t* table, ght_key_t key)
     ght_bucket_t* bucket = table->buckets[index];
     ght_bucket_t* prev = NULL;
     
-    while (bucket && (key != bucket->key))
+    while (bucket && table->comparator(key, bucket->key))
     {
         prev = bucket;
         bucket = bucket->next;
@@ -231,7 +237,7 @@ ght_status_t ght_delete(ght_table_t* table, ght_key_t key)
     ght_bucket_t* bucket = table->buckets[index];
     ght_bucket_t* prev = NULL;
     
-    while (bucket && (key != bucket->key))
+    while (bucket && table->comparator(key, bucket->key))
     {
         prev = bucket;
         bucket = bucket->next;
@@ -311,6 +317,7 @@ ght_status_t ght_resize(ght_table_t* table, ght_width_t width)
     ght_cfg_t cfg = {
                         .digestor = table->digestor,
                         .deallocator = table->deallocator,
+                        .comparator = table->comparator,
                         .width = width,
                         .auto_resize = 0.0
                     };
@@ -391,6 +398,20 @@ static GHT_FORCE_INLINE uint64_t _ght_digestor_murmur3_64(ght_key_t key, uint64_
     hash ^= (hash >> 33);
 
     return hash;
+}
+
+static ght_result_t _ght_comparator_default(ght_key_t key1, ght_key_t key2)
+{
+    if (key1 > key2)
+    {
+        return 1;
+    }
+    else if (key1 < key2)
+    {
+        return -1;
+    }
+    
+    return 0;
 }
 
 static void _ght_delete_recursive(ght_bucket_t* bucket, ght_load_t* load, ght_deallocator_t deallocator)
