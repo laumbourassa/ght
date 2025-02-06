@@ -35,19 +35,22 @@ typedef struct ght_table ght_table_t;   // Opaque type representing the hash tab
 typedef uintptr_t ght_key_t;            // Type representing a key used to access the corresponding data in the table.
 typedef uintptr_t ght_data_t;           // Type representing the data stored in the table.
 typedef int8_t ght_status_t;            // Type indicating if an error occured while executing a function.
+typedef int32_t ght_result_t;           // Type representing the result of a comparator.
 typedef size_t ght_index_t;             // Type representing the index of an item in the table.
 typedef size_t ght_load_t;              // Type representing the number of elements in the table.
 typedef size_t ght_width_t;             // Type representing the number of buckets in the table.
 typedef size_t ght_hash_t;              // Type representing the result of a hashing function (digestor).
 typedef double ght_load_factor_t;       // Type representing the load of table divided by its width.
 
-typedef ght_hash_t (*ght_digestor_t)(ght_key_t key);                // User-provided hashing function
-typedef void (*ght_deallocator_t)(ght_key_t key, ght_data_t data);  // User-provided deallocator function for custom structures
+typedef ght_hash_t (*ght_digestor_t)(ght_key_t key);                        // User-provided hashing function
+typedef void (*ght_deallocator_t)(ght_key_t key, ght_data_t data);          // User-provided deallocator function for custom structures
+typedef ght_result_t (*ght_comparator_t)(ght_key_t key1, ght_key_t key2);   // Returns positive value if data1 > data2, negative if data1 < data2, 0 if equal
 
 typedef struct ght_cfg
 {
     ght_digestor_t digestor;
     ght_deallocator_t deallocator;
+    ght_comparator_t comparator;
     ght_width_t width;
     ght_load_factor_t auto_resize;
 } ght_cfg_t;
